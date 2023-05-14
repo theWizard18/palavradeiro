@@ -1,0 +1,12 @@
+phonemes:
+  V: [a, e, i, o, u]
+  C: [m, n, p, t, k, s, w, l, j]
+  N: [m, n]
+phonotactics:
+- !Maybe C
+- !One V
+- !Maybe N
+max_syllables: 3
+word_quantity: 100
+filters: []
+separate_syllables: false
