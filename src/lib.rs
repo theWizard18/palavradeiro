@@ -1,13 +1,6 @@
-use std::{
-    fs,
-    env,
-    collections::HashMap,
-};
+use std::{collections::HashMap, env, fs};
 
-use rand::{
-    seq::SliceRandom,
-    Rng,
-};
+use rand::{seq::SliceRandom, Rng};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -24,7 +17,7 @@ pub struct Config {
     pub max_syllables:      u8,
     pub word_quantity:      u16,
     pub filters:            Vec<String>,
-    pub separate_syllables: bool
+    pub separate_syllables: bool,
 }
 impl Config {
     pub fn build(
@@ -46,19 +39,28 @@ impl Config {
     }
     fn from_default() -> Self {
         let mut phonemes = HashMap::new();
-        phonemes.insert('C', vec!["m", "n", "p", "t", "k", "s", "w", "l", "j"]
-            .iter().map(|s| s.to_string()).collect());
-        phonemes.insert('V', vec!["a", "e", "i", "o", "u"]
-            .iter().map(|s| s.to_string()).collect());
-        phonemes.insert('N', vec!["m", "n"]
-            .iter().map(|s| s.to_string()).collect());
+        phonemes.insert(
+            'C',
+            vec!["m", "n", "p", "t", "k", "s", "w", "l", "j"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        phonemes.insert(
+            'V',
+            vec!["a", "e", "i", "o", "u"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        phonemes.insert('N', vec!["m", "n"].iter().map(|s| s.to_string()).collect());
         Self {
             phonemes,
-            phonotactics: vec![Tactic::Maybe('C'), Tactic::One('V'), Tactic::Maybe('N')],
-            filters: vec![],
-            max_syllables: 3,
+            phonotactics:       vec![Tactic::Maybe('C'), Tactic::One('V'), Tactic::Maybe('N')],
+            filters:            vec![],
+            max_syllables:      3,
             separate_syllables: false,
-            word_quantity: 100,
+            word_quantity:      100,
         }
     }
 }
@@ -81,7 +83,7 @@ pub fn run() -> Result<Vec<String>, &'static str> {
             &config.phonotactics,
             &config.max_syllables,
             &config.phonemes,
-            &config.separate_syllables
+            &config.separate_syllables,
         ) {
             Ok(w)  => words.push(w),
             Err(e) => return Err(e),
@@ -90,9 +92,10 @@ pub fn run() -> Result<Vec<String>, &'static str> {
     if config.filters.is_empty() {
         return Ok(words);
     }
-    let words = words.into_iter()
-        .filter(|w| config.filters
-            .iter().any(|f| !w.contains(f))).collect();
+    let words = words
+        .into_iter()
+        .filter(|w| config.filters.iter().any(|f| !w.contains(f)))
+        .collect();
     Ok(words)
 }
 fn get_config(paths: &Vec<String>) -> Config {
@@ -119,13 +122,12 @@ fn gen_word(
     sep_syllable:  &bool,
 ) -> Result<String, &'static str> {
     let mut word = String::new();
-    let syllable_qtd = rand::thread_rng()
-        .gen_range(1..=*max_syllables);
+    let syllable_qtd = rand::thread_rng().gen_range(1..=*max_syllables);
 
     for _ in 1..=syllable_qtd {
         match gen_syllable(tactics, phonemes, sep_syllable) {
             Ok(s)  => word.push_str(s.as_str()),
-            Err(e) => return Err(e)
+            Err(e) => return Err(e),
         };
     }
     Ok(word)
@@ -175,7 +177,7 @@ fn process_multiple(vc: &Vec<char>) -> Option<&char> {
     let mut rng = rand::thread_rng();
     match rng.gen_bool(0.5) {
         true  => None,
-        false => vc.choose(&mut rng)
+        false => vc.choose(&mut rng),
     }
 }
 
@@ -186,5 +188,6 @@ fn choose_phoneme_of(group: &char, phonemes: &HashMap<char, Vec<String>>) -> Str
     }
     phonemes[group]
         .choose(&mut rng)
-        .unwrap_or(&("".into())).to_string()
+        .unwrap_or(&("".into()))
+        .to_string()
 }
