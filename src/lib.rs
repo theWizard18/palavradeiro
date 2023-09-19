@@ -93,7 +93,7 @@ pub fn run() -> Result<Vec<String>, &'static str> {
     }
     let words = words
         .into_iter()
-        .filter(|w| config.filters.iter().any(|f| !w.contains(f)))
+        .filter(|w| config.filters.iter().all(|f| !w.contains(f)))
         .collect();
     Ok(words)
 }
