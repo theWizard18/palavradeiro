@@ -5,9 +5,8 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub enum Tactic {
-    Maybe(char),
-    One(char),
-    Multiple(Vec<char>),
+    Maybe(Vec<char>),
+    One(Vec<char>),
 }
 
 #[derive(Deserialize)]
@@ -56,7 +55,7 @@ impl Config {
         phonemes.insert('N', vec!["m", "n"].iter().map(|s| s.to_string()).collect());
         Self {
             phonemes,
-            phonotactics:       vec![Tactic::Maybe('C'), Tactic::One('V'), Tactic::Maybe('N')],
+            phonotactics:       vec![Tactic::Maybe(vec!['C']), Tactic::One(vec!['V']), Tactic::Maybe(vec!['N'])],
             filters:            vec![],
             max_syllables:      3,
             separate_syllables: false,
@@ -112,10 +111,13 @@ fn get_config(paths: &Vec<String>) -> Config {
     }
     match serde_yaml::from_str::<Config>(&yaml) {
         Ok(c)  => c,
-        Err(_) => Config::from_default(),
+        Err(_) => {
+            println!("Failed to parse `palavradeiro.yaml`, using defaults");
+            Config::from_default()
+        },
     }
 }
-fn gen_word(
+fn gen_word (
     tactics:       &[Tactic],
     max_syllables: &u8,
     phonemes:      &HashMap<char, Vec<String>>,
@@ -155,9 +157,8 @@ fn gen_syllable(
 
 fn process_tactic(group: &Tactic, phonemes: &HashMap<char, Vec<String>>) -> String {
     let key = match group {
-        Tactic::One(c)       => Some(c),
-        Tactic::Maybe(c)     => process_maybe(c),
-        Tactic::Multiple(vc) => process_multiple(vc),
+        Tactic::One(vc)   => process_one(vc),
+        Tactic::Maybe(vc) => process_maybe(vc),
     };
     match key {
         Some(c) => choose_phoneme_of(c, phonemes),
@@ -165,20 +166,17 @@ fn process_tactic(group: &Tactic, phonemes: &HashMap<char, Vec<String>>) -> Stri
     }
 }
 
-fn process_maybe(c: &char) -> Option<&char> {
+fn process_maybe(vc: &Vec<char>) -> Option<&char> {
     let mut rng = rand::thread_rng();
     match rng.gen_bool(0.5) {
         true  => None,
-        false => Some(c),
+        false => process_one(vc),
     }
 }
 
-fn process_multiple(vc: &Vec<char>) -> Option<&char> {
+fn process_one(vc: &Vec<char>) -> Option<&char> {
     let mut rng = rand::thread_rng();
-    match rng.gen_bool(0.5) {
-        true  => None,
-        false => vc.choose(&mut rng),
-    }
+    vc.choose(&mut rng)
 }
 
 fn choose_phoneme_of(group: &char, phonemes: &HashMap<char, Vec<String>>) -> String {
