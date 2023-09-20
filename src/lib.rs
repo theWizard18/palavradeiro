@@ -65,10 +65,7 @@ impl Config {
 }
 
 pub fn run() -> Result<Vec<String>, &'static str> {
-    let home = match env::var("HOME") {
-        Ok(v)  => v,
-        Err(_) => return Err("Couldn't find home directory."),
-    };
+    let home = env::var("HOME").map_err(|_| "Couldn't find home directory.")?;
 
     let paths = vec![
         "./palavradeiro.yaml".into(),
@@ -77,31 +74,36 @@ pub fn run() -> Result<Vec<String>, &'static str> {
     ];
     let config = get_config(&paths);
     let mut words = Vec::new();
-    while words.len() <= config.word_quantity as usize {
-        match gen_word(
+    let mut none_counter = 0;
+    while words.len() < config.word_quantity as usize {
+        let word = gen_word(
             &config.phonotactics,
             &config.max_syllables,
             &config.phonemes,
             &config.separate_syllables,
-        ) {
-            Ok(w)  => words.push(w),
-            Err(e) => return Err(e),
+            &config.filters,
+        );
+        match word {
+            None    => none_counter += 1,
+            Some(w) => {
+                words.push(w);
+                none_counter = 0;
+            },
+        }
+
+        if none_counter >= 100 {
+            return Err("The filters are impeding the generation of words,\n\
+            change the filters in order to generate them.")
         }
     }
-    if config.filters.is_empty() {
-        return Ok(words);
-    }
-    let words = words
-        .into_iter()
-        .filter(|w| config.filters.iter().all(|f| !w.contains(f)))
-        .collect();
     Ok(words)
 }
+
 fn get_config(paths: &Vec<String>) -> Config {
     let mut yaml = "".into();
     for i in paths {
         match fs::read_to_string(i) {
-            Ok(f) => yaml = f,
+            Ok(f)  => yaml = f,
             Err(_) => continue,
         }
     }
@@ -122,24 +124,28 @@ fn gen_word (
     max_syllables: &u8,
     phonemes:      &HashMap<char, Vec<String>>,
     sep_syllable:  &bool,
-) -> Result<String, &'static str> {
+    filters: &Vec<String>,
+) -> Option<String> {
     let mut word = String::new();
     let syllable_qtd = rand::thread_rng().gen_range(1..=*max_syllables);
 
     for _ in 1..=syllable_qtd {
-        match gen_syllable(tactics, phonemes, sep_syllable) {
-            Ok(s)  => word.push_str(s.as_str()),
-            Err(e) => return Err(e),
-        };
+        word.push_str(gen_syllable(tactics, phonemes, sep_syllable).as_str());
     }
-    Ok(word)
+    if filters.is_empty() {
+        return Some(word)
+    }
+    if filters.iter().any(|f| word.contains(f)) {
+        return None
+    }
+    Some(word)
 }
 
 fn gen_syllable(
     tactics:      &[Tactic],
     phonemes:     &HashMap<char, Vec<String>>,
     sep_syllable: &bool,
-) -> Result<String, &'static str> {
+) -> String {
     let chars: Vec<String> = tactics
         .iter()
         .map(|i| process_tactic(i, phonemes))
@@ -152,7 +158,7 @@ fn gen_syllable(
     if *sep_syllable {
         syllable.push('-');
     }
-    Ok(syllable)
+    syllable
 }
 
 fn process_tactic(group: &Tactic, phonemes: &HashMap<char, Vec<String>>) -> String {
