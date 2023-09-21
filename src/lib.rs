@@ -132,9 +132,6 @@ fn gen_word (
     for _ in 1..=syllable_qtd {
         word.push_str(gen_syllable(tactics, phonemes, sep_syllable).as_str());
     }
-    if filters.is_empty() {
-        return Some(word)
-    }
     if filters.iter().any(|f| word.contains(f)) {
         return None
     }
