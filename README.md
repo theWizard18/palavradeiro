@@ -7,7 +7,7 @@ Palavradeiro is a word generator for conlangs, configured in a yaml file.
 The configuration file should be either in the current directory, in the home directory or in
 `~/.config/palavradeiro/palavradeiro.yaml`.
 
-the default configuration:
+The default configuration:
 
 ```yaml
 phonemes:
